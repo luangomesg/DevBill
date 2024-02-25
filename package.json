@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "DevBill API - Control your financial life quickly and easily.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "lint": "eslint ./ --fix",
     "dev": "tsx watch ./src/server.ts"
