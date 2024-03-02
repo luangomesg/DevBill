@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 
-import packageJson from '../../package.json'
+import packageJson from '../../../package.json'
 
 class BaseController {
   async index(_: Request, res: Response) {
