@@ -1,3 +1,4 @@
+import cors from 'cors'
 import express from 'express'
 import 'dotenv/config'
 
@@ -6,7 +7,11 @@ import { routes } from './routes'
 
 database.mongo().then(() => {
   const app = express()
-
+  app.use(
+    cors({
+      origin: process.env.FRONT_URL
+    })
+  )
   app.use(express.json())
   app.use(routes)
 

@@ -12,5 +12,9 @@ routes.get('/categories', categoriesController.index)
 routes.post('/categories', categoriesController.create)
 
 routes.get('/transactions/dashboard', transactionsController.getDashboard)
+routes.get(
+  '/transactions/financial-evolution',
+  transactionsController.getFinancial
+)
 routes.get('/transactions', transactionsController.index)
 routes.post('/transactions', transactionsController.create)

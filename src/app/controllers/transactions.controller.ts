@@ -1,11 +1,14 @@
 import { Request, Response } from 'express'
 import { Aggregate } from 'mongoose'
-import { z } from 'zod'
+import { number, z } from 'zod'
 
 import { BalanceDTO } from '../../dtos/balance.dto'
 import { ExpenseDTO } from '../../dtos/expensedto'
 import { CreateTransactionsDTO } from '../../dtos/transactions.dto'
-import { getExpenses } from '../../services/transactions.service'
+import {
+  getExpenses,
+  getFinancialEvolution
+} from '../../services/transactions.service'
 import categorySchema from '../schemas/category.schema'
 import transactionsSchema from '../schemas/transactions.schema'
 
@@ -185,6 +188,15 @@ class TransactionsControler {
     }
 
     return response.json({ ...result, expensesByCategory: expenses })
+  }
+
+  getFinancial = async (
+    request: Request,
+    response: Response
+  ): Promise<BalanceDTO[] | Response> => {
+    const result = await getFinancialEvolution(request, response)
+
+    return response.json({ result })
   }
 }
 
