@@ -1,127 +1,90 @@
-import { Request, Response } from 'express'
-import { z } from 'zod'
+import { StatusCodes } from 'http-status-codes'
 
-import transactionsSchema from '../app/schemas/transactions.schema'
-import { BalanceDTO } from '../dtos/balance.dto'
-import { ExpenseDTO } from '../dtos/expensedto'
+import { CategoriesRepository } from '../database/repositories/categories.repository'
+import { TransactionsRepository } from '../database/repositories/transactions.repository'
+import {
+  CreateTransactionDTO,
+  GetDashboardDTO,
+  GetFinancialEvolutionDTO,
+  IndexTransactionsDTO
+} from '../dtos/transactions.dto'
+import { Balance } from '../entities/balance.entity'
+import { Expense } from '../entities/expense.entity'
+import { Transaction } from '../entities/transactions.entity'
+import { AppError } from '../errors/app.error'
 
-export async function getExpenses(
-  request: Request,
-  response: Response,
-  beginDate: string,
-  endDate: string
-): Promise<ExpenseDTO[]> {
-  const aggregate = transactionsSchema.aggregate<ExpenseDTO>()
-  const matchParams: Record<string, unknown> = {
-    type: 'despesa'
-  }
+export class TransactionsService {
+  constructor(
+    private transactionsRepository: TransactionsRepository,
+    private categoriesRepository: CategoriesRepository
+  ) {}
 
-  if (beginDate || endDate) {
-    matchParams.date = {
-      ...(beginDate && { $gte: new Date(beginDate as string) }),
-      ...(endDate && { $lte: new Date(endDate as string) })
+  async create({
+    title,
+    type,
+    date,
+    categoryId,
+    amount
+  }: CreateTransactionDTO): Promise<Transaction> {
+    const category = await this.categoriesRepository.findById(categoryId)
+
+    if (!category) {
+      throw new AppError('Category does not exists.', StatusCodes.NOT_FOUND)
     }
+
+    const transaction = new Transaction({
+      title,
+      type,
+      date,
+      category,
+      amount
+    })
+
+    const createdTransaction =
+      await this.transactionsRepository.create(transaction)
+
+    return createdTransaction
   }
 
-  const result = await aggregate
-    .match(matchParams)
-    .lookup({
-      from: 'categories',
-      localField: 'category',
-      foreignField: '_id',
-      as: 'category'
-    })
-    .unwind('category')
-    .group({
-      _id: '$category._id',
-      title: {
-        $first: '$category.title'
-      },
-      color: {
-        $first: '$category.color'
-      },
-      amount: {
-        $sum: '$amount'
-      }
-    })
+  async index(filters: IndexTransactionsDTO): Promise<Transaction[]> {
+    const transactions = await this.transactionsRepository.index(filters)
 
-  return result
-}
+    return transactions
+  }
 
-export async function getFinancialEvolution(
-  request: Request,
-  response: Response
-): Promise<BalanceDTO[] | Response> {
-  const schema = z.object({
-    year: z.string()
-  })
+  async getDashboard({
+    beginDate,
+    endDate
+  }: GetDashboardDTO): Promise<{ balance: Balance; expenses: Expense[] }> {
+    let [balance, expenses] = await Promise.all([
+      this.transactionsRepository.getBalance({
+        beginDate,
+        endDate
+      }),
+      this.transactionsRepository.getExpenses({
+        beginDate,
+        endDate
+      })
+    ])
 
-  try {
-    schema.parse(request.query)
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      const errors = err.issues.map(issue => ({
-        field: issue.path.join('.'),
-        message: issue.message
-      }))
-      return response.status(400).json({ error: errors })
+    if (!balance) {
+      balance = new Balance({
+        _id: null,
+        incomes: 0,
+        expenses: 0,
+        balance: 0
+      })
     }
+
+    return { balance, expenses }
   }
-  const aggregate = transactionsSchema.aggregate<BalanceDTO>()
 
-  const { year } = request.query
+  async getFinancialEvolution({
+    year
+  }: GetFinancialEvolutionDTO): Promise<Balance[]> {
+    const financialEvolution =
+      await this.transactionsRepository.getFinancialEvolution({ year })
 
-  const result = await aggregate
-    .match({
-      date: {
-        $gte: new Date(`${year}-01-01`),
-        $lte: new Date(`${year}-12-31`)
-      }
-    })
-    .project({
-      _id: 0,
-      income: {
-        $cond: [
-          {
-            $eq: ['$type', 'renda']
-          },
-          '$amount',
-          0
-        ]
-      },
-      expense: {
-        $cond: [
-          {
-            $eq: ['$type', 'despesa']
-          },
-          '$amount',
-          0
-        ]
-      },
-      year: {
-        $year: '$date'
-      },
-      month: {
-        $month: '$date'
-      }
-    })
-    .group({
-      _id: ['$year', '$month'],
-      incomes: {
-        $sum: '$income'
-      },
-      expenses: {
-        $sum: '$expense'
-      }
-    })
-    .addFields({
-      balance: {
-        $subtract: ['$incomes', '$expenses']
-      }
-    })
-    .sort({
-      _id: 1
-    })
-
-  return result
+    return financialEvolution
+  }
 }
