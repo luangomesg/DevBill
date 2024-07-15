@@ -7,7 +7,7 @@ import { errorHandler } from './middlewares/error-handler.middleware'
 import { routes } from './routes'
 
 const app = express()
-const port = process.env.PORT || 4000
+const port = parseInt(process.env.PORT || '4000')
 
 setupMongo().then(() => {
   app.use(
@@ -19,7 +19,7 @@ setupMongo().then(() => {
   app.use(routes)
   app.use(errorHandler)
 
-  app.listen(port, () => {
+  app.listen(port, '0.0.0.0', () => {
     console.log(`APP is running at port ${port}`)
   })
 })
