@@ -32,8 +32,8 @@ const express_1 = __importStar(require("express"));
 const database_1 = require("./database");
 const error_handler_middleware_1 = require("./middlewares/error-handler.middleware");
 const routes_1 = require("./routes");
+const app = (0, express_1.default)();
 (0, database_1.setupMongo)().then(() => {
-    const app = (0, express_1.default)();
     app.use((0, cors_1.default)({
         origin: process.env.FRONT_URL
     }));
@@ -42,3 +42,4 @@ const routes_1 = require("./routes");
     app.use(error_handler_middleware_1.errorHandler);
     app.listen(3333, () => console.log('🚀 App is running at port 3333!'));
 });
+exports.default = app;
