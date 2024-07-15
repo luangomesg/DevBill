@@ -6,9 +6,9 @@ import { setupMongo } from './database'
 import { errorHandler } from './middlewares/error-handler.middleware'
 import { routes } from './routes'
 
-setupMongo().then(() => {
-  const app = express()
+const app = express()
 
+setupMongo().then(() => {
   app.use(
     cors({
       origin: process.env.FRONT_URL
@@ -20,3 +20,5 @@ setupMongo().then(() => {
 
   app.listen(3333, () => console.log('🚀 App is running at port 3333!'))
 })
+
+export default app
