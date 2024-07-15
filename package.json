@@ -1,7 +1,7 @@
 {
   "name": "devbill",
   "version": "1.0.0",
-  "description": "DevBill API - Control your financial life quickly and easily.",
+  "description": "DevBill API - Control your financial life quickly and easily. ",
   "main": "index.js",
   "scripts": {
     "lint": "eslint ./ --fix",
