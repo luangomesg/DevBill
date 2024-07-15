@@ -8,13 +8,13 @@ import { routes } from './routes'
 
 const app = express()
 const port = parseInt(process.env.PORT || '4000')
+const corsOptions = {
+  origin: 'https://dev-bill-frontend.vercel.app',
+  credentials: true
+}
 
 setupMongo().then(() => {
-  app.use(
-    cors({
-      origin: process.env.FRONT_URL
-    })
-  )
+  app.use(cors(corsOptions))
   app.use(json())
   app.use(routes)
   app.use(errorHandler)
